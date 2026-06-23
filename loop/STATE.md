@@ -2,7 +2,7 @@
 
 项目: ascend-avatar
 当前 Phase: 9
-上次心跳: 2026-06-23 19:48:00
+上次心跳: 2026-06-23 19:50:00
 上次更新者: claude
 状态: COMPLETED
 
@@ -41,6 +41,15 @@ Phase 9 已完成：嘴部清晰度相关参数已暴露为可配置，默认 bl
 - THG + mux：约 2-3 分钟（含 MuseTalk 预处理）
 - 输出：H.264 512×512 25fps，136 帧（约 5.4s）+ AAC 16kHz mono
 - 嘴部 ROI Laplacian 方差均值：新配置 **1065.55** vs 旧配置基线 **1063.68**（提升约 0.18%）
+
+## 全流程验证（sample/MyVideo_1.mp4）
+- 上传视频：1280×720@25fps，26.3s，658 帧，`upload_id=49a6c93f7de1f8a0`
+- MuseTalk 预处理：约 35 分钟（首次长视频 + 658 帧）
+- 生成文本："你好，这是用 MyVideo_1 做的数字人测试。"
+- 生成任务：`job_id=d657ab22e0314538`，PaddleSpeech TTS，THG 完成
+- 输出：`/ascend-avatar/output/generated/MyVideo_1_verify.mp4`
+- 输出格式：H.264 1280×720 25fps，92 帧（3.68s），文件 360K
+- 嘴部 ROI Laplacian 方差均值：**123.38**
 
 ## Phase 8 子任务（保留）
 - [x] 8.1 PaddleSpeech TTS 封装（`src/paddlespeech_tts_engine.py` 已完成，含 `spk_id`、懒加载、fallback）
