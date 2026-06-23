@@ -1,0 +1,26 @@
+Phase 7 checkpoint: 集成验收与测试
+===================================
+
+状态: 完成
+完成时间: 2026-06-17
+
+验收项:
+- [x] 端到端交互测试通过 (LLM → TTS → THG → RTMP → WebRTC)
+- [x] docs/benchmark.md 包含 ≥3 次实测延迟数据
+- [x] MediaMTX RTMP 推流验证成功 (10 句 H264+AAC)
+- [x] WebRTC 播放页可访问
+- [x] 所有模块 (llm_client, tts_engine, thg_engine, pipeline, webui) 可协同运行
+- [x] NPU 预热后推理稳定
+
+实测数据 (2026-06-17):
+- 输入: 你好，请简单介绍一下自己。
+- LLM 首 token: 77.6 ms
+- TTS 延迟: 1792.5 ms
+- 首帧视频延迟: 1904.0 ms
+- 句子数: 10
+- 结果: ✅ 全部 RTMP 推流成功
+
+遗留优化:
+- 首帧延迟未达 ≤1500ms 目标，主要受 edge-tts 网络延迟影响
+- 建议替换为本地 TTS 以进一步降低首帧
+- 可考虑将 MuseTalk 渲染改为边生成边推送，进一步压缩首帧

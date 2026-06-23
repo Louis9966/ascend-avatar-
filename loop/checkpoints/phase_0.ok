@@ -1,0 +1,1 @@
+Phase 0 completed: container running, NPU 7 visible, torch_npu works after sourcing CANN env, local MindIE LLM endpoint discovered.

@@ -1,0 +1,40 @@
+# MediaMTX configuration for Docker Compose mode.
+# Binds explicitly to 0.0.0.0 and enables the API for healthchecks.
+
+rtsp: no
+rtmp: yes
+rtmpAddress: 0.0.0.0:1935
+
+webrtc: yes
+webrtcAddress: 0.0.0.0:8889
+webrtcLocalUDPAddress: 0.0.0.0:8189
+
+hls: yes
+hlsAddress: 0.0.0.0:8888
+hlsAlwaysRemux: yes
+
+api: yes
+apiAddress: 0.0.0.0:9997
+
+# Allow API access from the backend host IP as well as localhost, so path
+# health checks work regardless of which local address is used.
+authMethod: internal
+authInternalUsers:
+  - user: any
+    pass: ""
+    ips: []
+    permissions:
+      - action: publish
+      - action: read
+      - action: playback
+  - user: any
+    pass: ""
+    ips: ["127.0.0.1/32", "::1/128", "192.168.1.117/32"]
+    permissions:
+      - action: api
+      - action: metrics
+      - action: pprof
+
+paths:
+  ~^live/(.+)$:
+    source: publisher

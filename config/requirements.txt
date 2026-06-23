@@ -1,0 +1,52 @@
+# Python dependencies for ascend-avatar
+# Install inside the ascend-avatar container only:
+#   pip install --no-cache-dir -r /ascend-avatar/config/requirements.txt
+
+# Core LLM / HTTP
+openai>=1.30,<2.0
+httpx>=0.27,<0.28
+aiohttp>=3.9
+pydantic>=2.0
+python-dotenv>=1.0
+pyyaml>=6.0
+
+# Web UI / server
+gradio==4.44.1
+fastapi>=0.110
+uvicorn[standard]>=0.29
+sse-starlette>=2.0
+
+# TTS
+edge-tts>=7.0
+pydub>=0.25
+
+# PaddleSpeech base framework (CPU). The paddlespeech package itself is
+# installed from the local checkout in /ascend-avatar/PaddleSpeech via
+# scripts/entrypoint-backend.sh, so it is intentionally omitted here.
+paddlepaddle
+yacs>=0.1.8
+pypinyin
+
+# MuseTalk / THG
+omegaconf>=2.3
+diffusers==0.30.2
+accelerate==0.28.0
+transformers==4.39.2
+huggingface-hub==0.30.2
+einops==0.8.1
+librosa==0.11.0
+soundfile==0.12.1
+imageio[ffmpeg]>=2.34
+moviepy>=1.0
+
+# CV / numerics
+opencv-python==4.11.0.86
+numpy==1.26.4
+scipy==1.13.1
+pillow>=10.0
+tqdm>=4.66
+
+# PyTorch stack (already present in the container image)
+torch==2.1.0
+torchvision==0.16.0
+torchaudio==2.1.0

@@ -1,0 +1,27 @@
+Phase 6 checkpoint: Gradio 前端与接口文档
+==========================================
+
+状态: 完成
+完成时间: 2026-06-17
+
+验收项:
+- [x] 前端使用 FastAPI + 自定义 HTML/JS，替代 Gradio 原生组件
+- [x] 根路径 / 返回聊天界面，支持 SSE 实时接收 LLM 文本和视频流事件
+- [x] /api/chat SSE 端点支持 text/voice/lang/max_tokens 参数
+- [x] WebRTC 播放器通过 iframe 嵌入，自动切换 idle/播放状态
+- [x] docs/api.md 已创建，描述消息格式、事件流和错误码
+- [x] docs/deploy.md 已创建，描述容器启动步骤
+- [x] docs/benchmark.md 已更新，包含 ≥3 次实测延迟记录
+
+关键事件:
+- start: 会话开始
+- llm_text: 大模型流式文本增量
+- stream_ready: 首帧视频就绪，返回 webrtc_url / rtmp_url / 延迟指标
+- sentence_stream_done: 单句播放完成
+- done: 全部完成
+- error: 错误信息
+
+验证结果:
+- http://192.168.1.117:8188/ 返回自定义聊天 HTML
+- /api/chat 返回有效 SSE 流
+- /gradio/ 返回管理面板

@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ascend Avatar</title>
+<link rel="stylesheet" href="/static/css/chat.css">
+</head>
+<body>
+<div class="container">
+  <h2>🧑‍💼 Ascend Avatar</h2>
+
+  <div class="tabs">
+    <button class="tab-btn active" id="tabChat">实时对话</button>
+    <button class="tab-btn" id="tabVideoGen">视频生成</button>
+  </div>
+
+  <!-- 实时对话面板 -->
+  <div id="chatPanel" class="panel active">
+    <div id="videoBox">
+      <video id="idleVideo" autoplay loop muted playsinline style="display:none"></video>
+      <div id="placeholder">等待视频流...</div>
+    </div>
+    <div id="transcript"></div>
+    <div id="metrics"></div>
+    <div id="chatStatus">就绪</div>
+    <div class="row">
+      <input type="text" id="textInput" placeholder="例如：你好，请介绍一下自己。" value="你好，请简单介绍一下自己。">
+      <select id="voiceSelect">
+        <option value="zh-CN-XiaoxiaoNeural">晓晓（女声）</option>
+        <option value="zh-CN-YunxiNeural">云希（男声）</option>
+        <option value="zh-CN-YunjianNeural">云健（男声）</option>
+        <option value="en-US-AriaNeural">Aria（英文女声）</option>
+        <option value="en-US-GuyNeural">Guy（英文男声）</option>
+      </select>
+      <select id="langSelect">
+        <option value="auto">自动</option>
+        <option value="zh" selected>中文</option>
+        <option value="en">英文</option>
+      </select>
+      <button id="sendBtn">发送</button>
+    </div>
+  </div>
+
+  <!-- 视频生成面板 -->
+  <div id="videoGenPanel" class="panel">
+    <div class="upload-section" id="uploadSection">
+      <h3>第一步：上传源视频</h3>
+      <p class="hint">建议 5–30 秒，正面清晰人脸，最终会被转码为 25fps。</p>
+      <input type="file" id="videoUpload" accept="video/mp4,video/avi,video/mov,video/*">
+      <button id="uploadBtn">上传并预处理</button>
+      <div id="uploadStatus" class="status-text">等待上传...</div>
+      <div class="progress-bar"><div id="uploadProgress" class="progress-fill"></div></div>
+      <video id="uploadPreview" controls style="display:none"></video>
+    </div>
+
+    <div class="generate-section" id="generateSection">
+      <h3>第二步：输入文本生成唇形同步视频</h3>
+      <textarea id="genTextInput" rows="3" placeholder="例如：你好，欢迎使用昇腾数字人。"></textarea>
+      <div class="row">
+        <label for="spkSelect">说话人：</label>
+        <select id="spkSelect"></select>
+      </div>
+      <button id="generateBtn" disabled>生成视频</button>
+      <div id="generateStatus" class="status-text">请先完成视频上传...</div>
+      <div class="progress-bar"><div id="generateProgress" class="progress-fill"></div></div>
+    </div>
+
+    <div class="result-section" id="resultSection" style="display:none">
+      <h3>生成结果</h3>
+      <video id="resultVideo" controls style="width:100%"></video>
+      <a id="downloadLink" href="#" download>下载 MP4</a>
+    </div>
+  </div>
+</div>
+<script src="/static/js/chat.js"></script>
+</body>
+</html>

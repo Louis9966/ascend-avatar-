@@ -1,0 +1,55 @@
+# Docker Compose for ascend-avatar.
+# Replaces the manual `docker run` command and makes logs available via
+# `docker compose logs -f <service>`.
+#
+# Both services use host networking because RTMP/WebRTC port mapping is
+# cumbersome and the original deployment already relied on `--net=host`.
+
+services:
+  mediamtx:
+    image: bluenviron/mediamtx:latest
+    container_name: ascend-avatar-mediamtx
+    network_mode: host
+    ipc: host
+    privileged: true
+    volumes:
+      - /data/ascend-avatar/config/mediamtx-compose.yml:/etc/mediamtx/mediamtx.yml:ro
+    command: ["/etc/mediamtx/mediamtx.yml"]
+    restart: unless-stopped
+
+  backend:
+    image: swr.cn-south-1.myhuaweicloud.com/ascendhub/ascend-pytorch:24.0.0-A2-2.1.0-ubuntu20.04
+    container_name: ascend-avatar-backend
+    user: root
+    network_mode: host
+    ipc: host
+    privileged: true
+    devices:
+      - /dev/davinci7
+      - /dev/davinci_manager
+      - /dev/devmm_svm
+      - /dev/hisi_hdc
+    volumes:
+      - /usr/local/dcmi:/usr/local/dcmi:ro
+      - /usr/local/bin/npu-smi:/usr/local/bin/npu-smi:ro
+      - /usr/local/Ascend/driver:/usr/local/Ascend/driver:ro
+      - /usr/local/sbin:/usr/local/sbin:ro
+      - /data/ascend-avatar:/ascend-avatar
+    environment:
+      - PROJECT_ROOT=/ascend-avatar
+      - ASCEND_VISIBLE_DEVICES=7
+      - ASCEND_RT_VISIBLE_DEVICES=7
+      - PYTHONUNBUFFERED=1
+      - LLM_BASE_URL=http://192.168.1.117:1025/v1
+      - LLM_MODEL=qwen3_32b
+      - MEDIAMTX_HOST=192.168.1.117
+      - MEDIAMTX_RTMP_PORT=1935
+      - MEDIAMTX_WEBRTC_PORT=8889
+      - WEBUI_HOST=0.0.0.0
+      - WEBUI_PORT=8188
+      - LOG_LEVEL=INFO
+    working_dir: /ascend-avatar
+    command: ["/ascend-avatar/scripts/entrypoint-backend.sh"]
+    depends_on:
+      - mediamtx
+    restart: unless-stopped

@@ -1,0 +1,65 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv/
+
+# IDEs / OS
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Secrets / local config
+.env
+config/.env
+*.key
+*.pem
+
+# Claude Code session state
+.claude/
+
+# Docker Compose marker files (recreated on container start)
+.compose_*
+
+# Runtime outputs & caches
+output/
+uploads/
+logs/
+*.log
+
+# Large external codebases / models
+thg/models/
+thg/**/*.pth
+thg/**/*.safetensors
+thg/**/*.ckpt
+PaddleSpeech/
+MuseTalk/
+tts/
+models/
+bin/
+
+# Sample media (optional, kept small; uncomment if you want them)
+# sample/*.mp4
+# sample/*.wav
+sample/
+
+# Weights / manifests
+weight.json
+fusion_result.json
+=4.35.0

@@ -1,0 +1,20 @@
+Phase 5 checkpoint: 实时流式管线串联
+=====================================
+
+状态: 完成
+完成时间: 2026-06-17
+
+验收项:
+- [x] LLM 流式输出 → 句子分段 → TTS → THG → RTMP 推流 全链路打通
+- [x] 每句生成独立的 RTMP 流到 MediaMTX (rtmp://127.0.0.1:1935/live/{session}_{index})
+- [x] MediaMTX v1.9.0 运行中，支持 RTMP ingest + WebRTC play + HLS
+- [x] 实测 10 句话全部成功推流 (H264 + MPEG-4 Audio)
+
+关键指标:
+- 首帧视频延迟: ~1.75-3.15s (从请求发出到首帧)
+- 整句 THG 渲染: ~3.67s/3s音频 (NPU prewarm 后)
+- RTMP 推流: 每句 2-8s，取决于音频长度
+
+阻塞/风险:
+- 首帧延迟未达 ≤1.5s 目标，主要瓶颈是 edge-tts 网络延迟 (~1.5-3s)
+- 建议后续替换为本地 TTS (CosyVoice/PaddleSpeech) 以降低首帧

@@ -1,0 +1,14 @@
+# Minimal mediamtx configuration for ascend-avatar
+# RTMP ingest from ffmpeg, WebRTC playback for the browser.
+
+rtsp: no
+rtmp: yes
+rtmpAddress: :1935
+
+webrtc: yes
+webrtcAddress: :8889
+webrtcLocalUDPAddress: :8189
+
+paths:
+  ~^live/(.+)$:
+    source: publisher

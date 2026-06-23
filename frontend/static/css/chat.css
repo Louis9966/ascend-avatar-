@@ -1,0 +1,164 @@
+* { box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  margin: 0;
+  padding: 16px;
+  background: #f5f5f5;
+}
+.container {
+  max-width: 960px;
+  margin: 0 auto;
+  background: #fff;
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+h2 { margin-top: 0; text-align: center; }
+h3 { margin-bottom: 8px; }
+
+/* Tabs */
+.tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  border-bottom: 2px solid #e4e7ed;
+}
+.tab-btn {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 16px;
+  color: #606266;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+}
+.tab-btn.active {
+  color: #2563eb;
+  border-bottom-color: #2563eb;
+  font-weight: 600;
+}
+
+/* Panels */
+.panel { display: none; }
+.panel.active { display: block; }
+
+/* Chat panel */
+#videoBox {
+  width: 100%;
+  height: 480px;
+  background: #000;
+  border-radius: 6px;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  position: relative;
+  overflow: hidden;
+}
+#videoBox video, #videoBox iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  border-radius: 6px;
+}
+#placeholder {
+  position: absolute;
+  color: #999;
+}
+#transcript {
+  min-height: 60px;
+  padding: 12px;
+  background: #f9fafb;
+  border-radius: 6px;
+  margin-bottom: 12px;
+  line-height: 1.6;
+}
+#metrics, #chatStatus, .status-text {
+  font-size: 13px;
+  color: #4b5563;
+  margin-bottom: 8px;
+  min-height: 18px;
+}
+.row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+input, select, button, textarea {
+  padding: 10px 12px;
+  font-size: 14px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+input[type="text"] { flex: 1; min-width: 160px; }
+textarea { width: 100%; resize: vertical; }
+button {
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+}
+button:disabled { background: #93c5fd; cursor: not-allowed; }
+
+/* Video generation panel */
+.upload-section, .generate-section, .result-section {
+  background: #f9fafb;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+.hint {
+  font-size: 13px;
+  color: #6b7280;
+  margin-top: 0;
+}
+input[type="file"] {
+  display: block;
+  margin-bottom: 10px;
+  border: none;
+  padding-left: 0;
+}
+#uploadPreview {
+  width: 100%;
+  max-height: 240px;
+  object-fit: contain;
+  margin-top: 10px;
+  border-radius: 6px;
+  background: #000;
+}
+.progress-bar {
+  width: 100%;
+  height: 8px;
+  background: #e4e7ed;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-top: 8px;
+  display: none;
+}
+.progress-bar.active { display: block; }
+.progress-fill {
+  height: 100%;
+  width: 0%;
+  background: #2563eb;
+  transition: width 0.2s;
+}
+#resultVideo {
+  border-radius: 8px;
+  background: #000;
+  margin-bottom: 10px;
+  width: 100%;
+}
+#downloadLink {
+  display: inline-block;
+  padding: 10px 16px;
+  background: #16a34a;
+  color: #fff;
+  text-decoration: none;
+  border-radius: 6px;
+}
+#downloadLink:hover { background: #22c55e; }
