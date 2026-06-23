@@ -1,0 +1,12 @@
+Phase 8 OK
+
+- 视频上传 API /api/upload 已实现并验证。
+- 动态 Avatar 管理（AvatarManager）实现 LRU 缓存与磁盘恢复。
+- 视频生成管线（VideoGenPipeline）实现 Text → TTS → THG → MP4。
+- PaddleSpeech CPU TTS 环境补齐，模型已下载。
+- 默认 avatar 视频上传 → PaddleSpeech TTS 生成 MP4 端到端验证成功：
+  - upload_id: e9e5c2dab2c65311
+  - job_id: b8e2107c58bc44a3
+  - 输出：H.264 512x512 25fps + AAC 16kHz mono，时长 4.4s
+- 接口文档 docs/api.md 与部署文档 docs/deploy.md 已更新。
+- README PRD 已更新至 v1.1。
