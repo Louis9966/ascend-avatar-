@@ -1,5 +1,6 @@
-# Python
-__pycache__/
+# SSH keys generated for pushing to GitHub
+.ssh/
+
 *.py[cod]
 *.pyo
 *.pyd
