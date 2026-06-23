@@ -1,8 +1,8 @@
 # ascend-avatar Loop 状态
 
 项目: ascend-avatar
-当前 Phase: 8
-上次心跳: 2026-06-23 18:11:48
+当前 Phase: 9
+上次心跳: 2026-06-23 19:48:00
 上次更新者: claude
 状态: COMPLETED
 
@@ -16,11 +16,33 @@
 - [x] Phase 6: Gradio 前端与接口文档
 - [x] Phase 7: 集成验收与测试
 - [x] Phase 8: 视频上传 + PaddleSpeech TTS + 视频生成工作流
+- [x] Phase 9: 视频生成嘴部清晰度优化
 
 ## 当前状态
-Phase 8 代码已实现并通过端到端验证。保留的实时对话模式不变；新增的“上传视频 → 输入文本 → 生成 MP4”工作流已可使用 PaddleSpeech TTS（关闭 edge-tts fallback）完成完整生成。
+Phase 9 已完成：嘴部清晰度相关参数已暴露为可配置，默认 blur_ratio 从 0.1 降至 0.05，渲染上采样改用 Lanczos4，FFmpeg 加入 -preset。端到端验证通过，PaddleSpeech TTS + MuseTalk THG 生成 MP4 成功，嘴部 ROI 锐度指标较旧配置略有提升。
 
-## Phase 8 子任务
+## Phase 9 目标
+1. 降低嘴部 mask 羽化，提升唇线锐度。
+2. 渲染 256×256 → 原 bbox 时使用更锐利插值。
+3. 所有关键参数可通过 `.env` 调优。
+4. 保持实时对话路径与视频生成路径行为一致。
+
+## Phase 9 子任务
+- [x] 9.1 `src/config.py` 新增 `THG_*` / `FFMPEG_*` 参数
+- [x] 9.2 `thg/musetalk/utils/blending.py` `get_image_prepare_material` 支持 `blur_ratio` 等参数（向后兼容）
+- [x] 9.3 `src/thg_engine.py` 使用新参数：mask、渲染插值、FFmpeg preset/CRF
+- [x] 9.4 `src/avatar_manager.py` / `src/pipeline.py` 传递新参数
+- [x] 9.5 更新 `config/.env.example`、`docs/deploy.md`、`docs/benchmark.md`
+- [x] 9.6 端到端验证：清理缓存后生成视频，主观/客观评估嘴部清晰度
+
+## Phase 9 实测指标
+- 文本："你好，欢迎使用数字人。今天天气真不错。"（17 中文字符）
+- TTS：PaddleSpeech `fastspeech2_aishell3` + `hifigan_aishell3`，约 27s
+- THG + mux：约 2-3 分钟（含 MuseTalk 预处理）
+- 输出：H.264 512×512 25fps，136 帧（约 5.4s）+ AAC 16kHz mono
+- 嘴部 ROI Laplacian 方差均值：新配置 **1065.55** vs 旧配置基线 **1063.68**（提升约 0.18%）
+
+## Phase 8 子任务（保留）
 - [x] 8.1 PaddleSpeech TTS 封装（`src/paddlespeech_tts_engine.py` 已完成，含 `spk_id`、懒加载、fallback）
 - [x] 8.1.1 容器内 PaddleSpeech + 模型下载环境补齐（`onnxoptimizer`/`aistudio_sdk`/`scikit-learn` libgomp TLS 等问题已修复，模型已下载至 `~/.paddlespeech/models/`，TTS 不再 fallback）
 - [x] 8.2 视频上传 API 与前端两步式 UI（`/api/upload`、状态轮询、上传校验、Tab 切换）
@@ -67,3 +89,4 @@ Phase 8 代码已实现并通过端到端验证。保留的实时对话模式不
 - **PaddleSpeech 首次使用需下载 `fastspeech2_aishell3` + `hifigan_aishell3` 模型；离线环境需预置到 `~/.paddlespeech/models/`。**
 - **每个上传视频需独立 MuseTalkAvatar 预处理，多视频并发需 LRU 缓存避免 NPU 内存耗尽。**
 - **上传视频需 ffmpeg 转 25fps、OpenCV Haar 人脸检测；无人脸或超时长需拒绝。**
+- **修改 `THG_BLUR_RATIO`、`THG_EXPAND`、`THG_UPPER_BOUNDARY_RATIO` 等 mask 参数后，已缓存的 avatar 目录需要删除或使用 `force=True` 重新 prepare，否则仍使用旧 mask。**

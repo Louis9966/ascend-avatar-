@@ -150,6 +150,19 @@ MAX_UPLOAD_DURATION_S=30
 MAX_UPLOAD_SIZE_MB=200
 AVATAR_CACHE_SIZE=3
 
+# 视频生成画质调优（Phase 9）
+# THG_BLUR_RATIO 越小嘴部边缘越锐利，但过低可能出现 mask 接缝；默认 0.05
+THG_EXTRA_MARGIN=10
+THG_PARSING_MODE=jaw
+THG_LEFT_CHEEK_WIDTH=90
+THG_RIGHT_CHEEK_WIDTH=90
+THG_UPPER_BOUNDARY_RATIO=0.5
+THG_EXPAND=1.5
+THG_BLUR_RATIO=0.05
+THG_RENDER_INTERPOLATION=lanczos4
+FFMPEG_CRF=18
+FFMPEG_PRESET=medium
+
 PADDLESPEECH_AM=fastspeech2_aishell3
 PADDLESPEECH_VOC=hifigan_aishell3
 PADDLESPEECH_LANG=zh
@@ -176,3 +189,4 @@ PADDLESPEECH_DEVICE=cpu
 8. **MediaMTX 启动失败**：查看 `docker-compose logs -f mediamtx`，常见问题包括端口占用或配置格式错误。
 9. **Broken pipe / RTMP 推流失败**：确认 MediaMTX 已 healthy（后端会等待 healthcheck 通过后再启动）。
 10. **上传/生成状态 404**：Starlette `Route` 端点需要显式接收 `Request` 并从 `request.path_params` 读取路径参数。
+11. **修改 THG 清晰度参数后效果没变化**：mask 参数只在 `MuseTalkAvatar.prepare()` 时生效，已缓存的 avatar 需要删除 `output/v15/avatars/<upload_id>` 目录后重新上传/预处理，或临时设置 `force=True` 重新 prepare。

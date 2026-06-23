@@ -48,6 +48,16 @@ class ConversationPipeline:
             bbox_shift=cfg.muse_bbox_shift,
             version=cfg.muse_version,
             result_dir=cfg.output_dir,
+            extra_margin=cfg.thg_extra_margin,
+            parsing_mode=cfg.thg_parsing_mode,
+            left_cheek_width=cfg.thg_left_cheek_width,
+            right_cheek_width=cfg.thg_right_cheek_width,
+            upper_boundary_ratio=cfg.thg_upper_boundary_ratio,
+            expand=cfg.thg_expand,
+            blur_ratio=cfg.thg_blur_ratio,
+            render_interpolation=cfg.thg_render_interpolation,
+            ffmpeg_crf=cfg.ffmpeg_crf,
+            ffmpeg_preset=cfg.ffmpeg_preset,
         )
         self.avatar.prepare()
         self.history: List[Dict[str, str]] = []

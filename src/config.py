@@ -39,6 +39,19 @@ class Config:
     muse_batch_size: int = 8
     muse_fps: int = 25
     muse_bbox_shift: int = 0
+
+    # THG quality tuning
+    thg_extra_margin: int = 10
+    thg_parsing_mode: str = "jaw"
+    thg_left_cheek_width: int = 90
+    thg_right_cheek_width: int = 90
+    thg_upper_boundary_ratio: float = 0.5
+    thg_expand: float = 1.5
+    thg_blur_ratio: float = 0.05
+    thg_render_interpolation: str = "lanczos4"
+    ffmpeg_crf: int = 18
+    ffmpeg_preset: str = "medium"
+
     avatar_id: str = "default"
     avatar_video: Path = Path("/ascend-avatar/avatars/default_base.mp4")
 
@@ -158,6 +171,16 @@ def load_config(env_path: str | None = None) -> Config:
         muse_batch_size=int(os.environ.get("MUSE_TALK_BATCH_SIZE", "8")),
         muse_fps=int(os.environ.get("MUSE_TALK_FPS", "25")),
         muse_bbox_shift=int(os.environ.get("MUSE_TALK_BBOX_SHIFT", "0")),
+        thg_extra_margin=_int("THG_EXTRA_MARGIN", 10),
+        thg_parsing_mode=os.environ.get("THG_PARSING_MODE", "jaw"),
+        thg_left_cheek_width=_int("THG_LEFT_CHEEK_WIDTH", 90),
+        thg_right_cheek_width=_int("THG_RIGHT_CHEEK_WIDTH", 90),
+        thg_upper_boundary_ratio=float(os.environ.get("THG_UPPER_BOUNDARY_RATIO", "0.5")),
+        thg_expand=float(os.environ.get("THG_EXPAND", "1.5")),
+        thg_blur_ratio=float(os.environ.get("THG_BLUR_RATIO", "0.05")),
+        thg_render_interpolation=os.environ.get("THG_RENDER_INTERPOLATION", "lanczos4"),
+        ffmpeg_crf=_int("FFMPEG_CRF", 18),
+        ffmpeg_preset=os.environ.get("FFMPEG_PRESET", "medium"),
         avatar_id=os.environ.get("AVATAR_ID", "default"),
         avatar_video=_path("AVATAR_VIDEO", _project_root() / "avatars/default_base.mp4"),
         tts_voice_zh_female=os.environ.get("TTS_VOICE_ZH_FEMALE", "zh-CN-XiaoxiaoNeural"),

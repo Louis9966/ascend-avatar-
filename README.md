@@ -1,8 +1,8 @@
 # ascend-avatar PRD — 实时对话 2D 数字人产品需求文档
 
-> **版本**：v1.1
+> **版本**：v1.2
 > **更新日期**：2026-06-23
-> **产品定位**：基于昇腾 910B 的实时对话 2D 数字人系统（单机验证版），已扩展支持“上传视频 + 文本生成 MP4”工作流
+> **产品定位**：基于昇腾 910B 的实时对话 2D 数字人系统（单机验证版），已扩展支持“上传视频 + 文本生成 MP4”工作流，并支持嘴部清晰度参数调优
 > **目标用户**：基础研究组内部验证与后续产线化评估
 > **交付形态**：可在单机 Web 页面中实时对话，也可上传自定义视频生成唇形同步短视频的 2D 数字人 Demo
 
@@ -229,6 +229,7 @@
 | **Phase 6** | Gradio 前端与接口 | 实现前端页面和接口文档 | `src/webui.py` + `docs/api.md` | Gradio 页面可交互；接口文档完整；前后端通信正常 | 重试 3 次失败则人工接管 |
 | **Phase 7** | 集成验收与测试 | 完整系统测试，输出延迟报告 | `docs/benchmark.md` + 验收结论 | 3 组测试通过；中英文对话正常；延迟达标 | 质量不达标则人工接管 |
 | **Phase 8** | 视频上传 + PaddleSpeech TTS + 视频生成工作流 | 在保留实时对话能力的基础上，新增用户上传视频并输入文本生成 MP4 的能力 | `src/avatar_manager.py` + `src/video_gen_pipeline.py` + 前端视频生成 Tab | 默认视频上传成功；PaddleSpeech TTS 生成音频；MuseTalk 渲染出 512×512 H.264+AAC MP4 | 重试 3 次失败则人工接管 |
+| **Phase 9** | 视频生成嘴部清晰度优化 | 将 MuseTalk 渲染/融合关键参数暴露为可配置，降低嘴部边缘羽化，提升唇线锐度 | `src/config.py` + `src/thg_engine.py` + `thg/musetalk/utils/blending.py` | 默认配置下生成视频嘴部 ROI 锐度指标不低于旧配置；`/api/generate` 与 `/api/chat` 均正常运行 | 重试 3 次失败则人工接管 |
 
 ### 8.2 状态持久化机制（Loop 记忆系统）
 
@@ -298,6 +299,18 @@
 
 详见 [`docs/api.md`](docs/api.md)。
 
+视频生成画质可通过环境变量调优（详见 `docs/benchmark.md`）：
+
+```bash
+# 默认配置（推荐）：降低 mask 羽化 +  sharper 上采样
+THG_BLUR_RATIO=0.05
+THG_RENDER_INTERPOLATION=lanczos4
+FFMPEG_CRF=18
+FFMPEG_PRESET=medium
+```
+
+> 修改 `THG_BLUR_RATIO` 等 mask 参数后，需要删除 `output/v15/avatars/<upload_id>` 缓存并重新上传/预处理，否则仍使用旧 mask。
+
 ---
 
 ## 9. 素材与资源要求
@@ -342,6 +355,8 @@
 - [x] 对话异常时可重新开始，不崩毁整个系统
 - [x] 可上传正面人脸视频并通过校验
 - [x] 上传视频预处理后，输入文本可生成 512×512 H.264+AAC MP4
+- [x] 视频生成嘴部清晰度可通过 `.env` 参数调优，默认配置下不低于旧配置基线
+- [x] 修改清晰度参数后，已缓存 avatar 重新预处理可生效
 - [x] 视频生成使用 PaddleSpeech TTS 时仍能成功出片
 
 ### 10.2 性能验收（必须全部通过）

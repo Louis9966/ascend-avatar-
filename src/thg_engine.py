@@ -53,6 +53,12 @@ class MuseTalkAvatar:
         left_cheek_width: int = 90,
         right_cheek_width: int = 90,
         vae_type: str = "sd-vae",
+        upper_boundary_ratio: float = 0.5,
+        expand: float = 1.5,
+        blur_ratio: float = 0.05,
+        render_interpolation: str = "lanczos4",
+        ffmpeg_crf: int = 18,
+        ffmpeg_preset: str = "medium",
     ):
         self.avatar_id = avatar_id
         self.video_path = Path(video_path)
@@ -68,6 +74,20 @@ class MuseTalkAvatar:
         self.left_cheek_width = left_cheek_width
         self.right_cheek_width = right_cheek_width
         self.muse_vae_type = vae_type
+        self.upper_boundary_ratio = upper_boundary_ratio
+        self.expand = expand
+        self.blur_ratio = blur_ratio
+        self.render_interpolation = render_interpolation
+        self.ffmpeg_crf = ffmpeg_crf
+        self.ffmpeg_preset = ffmpeg_preset
+
+        self.interpolation_map = {
+            "lanczos4": cv2.INTER_LANCZOS4,
+            "cubic": cv2.INTER_CUBIC,
+            "linear": cv2.INTER_LINEAR,
+            "area": cv2.INTER_AREA,
+            "nearest": cv2.INTER_NEAREST,
+        }
 
         if version == "v15":
             self.base_path = result_dir / version / "avatars" / avatar_id
@@ -231,7 +251,10 @@ class MuseTalkAvatar:
                 else:
                     mode = self.parsing_mode if self.version == "v15" else "raw"
                     mask, crop_box = get_image_prepare_material(
-                        frame, [x1, y1, x2, y2], fp=self.fp, mode=mode
+                        frame, [x1, y1, x2, y2], fp=self.fp, mode=mode,
+                        upper_boundary_ratio=self.upper_boundary_ratio,
+                        expand=self.expand,
+                        blur_ratio=self.blur_ratio,
                     )
                     mask_cache[cache_key] = (mask, crop_box)
                 cv2.imwrite(str(self.mask_out_path / f"{i:08d}.png"), mask)
@@ -311,7 +334,12 @@ class MuseTalkAvatar:
                 ori_frame = np.copy(self.frame_list_cycle[idx % len(self.frame_list_cycle)])
                 x1, y1, x2, y2 = bbox
                 try:
-                    res_frame = cv2.resize(res_frame.astype(np.uint8), (x2 - x1, y2 - y1))
+                    interp = self.interpolation_map.get(self.render_interpolation, cv2.INTER_LANCZOS4)
+                    res_frame = cv2.resize(
+                        res_frame.astype(np.uint8),
+                        (x2 - x1, y2 - y1),
+                        interpolation=interp,
+                    )
                 except Exception as e:
                     print(f"[THG] Resize error at frame {idx}: {e}")
                     idx += 1
@@ -354,7 +382,9 @@ class MuseTalkAvatar:
             "-pix_fmt",
             "yuv420p",
             "-crf",
-            "18",
+            str(self.ffmpeg_crf),
+            "-preset",
+            self.ffmpeg_preset,
             "-c:a",
             "aac",
             "-ar",

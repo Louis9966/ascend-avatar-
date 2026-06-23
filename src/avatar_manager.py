@@ -133,6 +133,16 @@ class AvatarManager:
                 bbox_shift=self.cfg.muse_bbox_shift,
                 version=self.cfg.muse_version,
                 result_dir=self.cfg.output_dir,
+                extra_margin=self.cfg.thg_extra_margin,
+                parsing_mode=self.cfg.thg_parsing_mode,
+                left_cheek_width=self.cfg.thg_left_cheek_width,
+                right_cheek_width=self.cfg.thg_right_cheek_width,
+                upper_boundary_ratio=self.cfg.thg_upper_boundary_ratio,
+                expand=self.cfg.thg_expand,
+                blur_ratio=self.cfg.thg_blur_ratio,
+                render_interpolation=self.cfg.thg_render_interpolation,
+                ffmpeg_crf=self.cfg.ffmpeg_crf,
+                ffmpeg_preset=self.cfg.ffmpeg_preset,
             )
 
             async with self._lock:
@@ -232,6 +242,16 @@ class AvatarManager:
             bbox_shift=self.cfg.muse_bbox_shift,
             version=self.cfg.muse_version,
             result_dir=self.cfg.output_dir,
+            extra_margin=self.cfg.thg_extra_margin,
+            parsing_mode=self.cfg.thg_parsing_mode,
+            left_cheek_width=self.cfg.thg_left_cheek_width,
+            right_cheek_width=self.cfg.thg_right_cheek_width,
+            upper_boundary_ratio=self.cfg.thg_upper_boundary_ratio,
+            expand=self.cfg.thg_expand,
+            blur_ratio=self.cfg.thg_blur_ratio,
+            render_interpolation=self.cfg.thg_render_interpolation,
+            ffmpeg_crf=self.cfg.ffmpeg_crf,
+            ffmpeg_preset=self.cfg.ffmpeg_preset,
         )
 
     async def _get_ready_avatar(self, upload_id: str) -> MuseTalkAvatar:

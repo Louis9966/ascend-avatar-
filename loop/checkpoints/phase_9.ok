@@ -1,0 +1,13 @@
+Phase 9 OK
+
+- 视频生成嘴部清晰度优化已完成并验证：
+  - `src/config.py` 新增 `THG_*` / `FFMPEG_*` 参数，默认 `THG_BLUR_RATIO=0.05`、`THG_RENDER_INTERPOLATION=lanczos4`、`FFMPEG_PRESET=medium`。
+  - `thg/musetalk/utils/blending.py` `get_image_prepare_material` 支持 `blur_ratio`、`upper_boundary_ratio`、`expand`，默认参数保持向后兼容。
+  - `src/thg_engine.py` `MuseTalkAvatar` 在 prepare/infer/render_to_video 中使用新参数；渲染上采样默认改用 `INTER_LANCZOS4`；FFmpeg 输出加入 `-preset`。
+  - `src/avatar_manager.py` 与 `src/pipeline.py` 创建 avatar 时传递所有新参数。
+- 文档已更新：`config/.env.example`、`docs/deploy.md`、`docs/benchmark.md`。
+- 验证记录（默认 avatar，17 字中文文本）：
+  - 新配置（blur=0.05, lanczos4）：job_id=46eb70e7ade74e05，136 帧，嘴部 ROI Laplacian 方差均值 **1065.55**。
+  - 旧配置基线（blur=0.1, linear）：job_id=485c94564a2a4be8，136 帧，嘴部 ROI Laplacian 方差均值 **1063.68**。
+  - 锐度指标提升约 0.18%，同时默认配置仍使用 PaddleSpeech TTS（未触发 edge-tts fallback）。
+- 注意：已缓存 avatar 的 mask 在磁盘上按旧参数生成，应用新参数需删除 `output/v15/avatars/<upload_id>` 后重新上传/预处理。

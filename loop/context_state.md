@@ -4,6 +4,33 @@
 
 ---
 
+## 2026-06-23 19:50 最新快照
+
+### 刚完成
+- 用户反馈视频生成嘴部区域模糊，要求提升生成质量。
+- 完成 Phase 9：视频生成嘴部清晰度优化。
+  - 在 `src/config.py` 中新增 `THG_*` 与 `FFMPEG_*` 环境变量参数。
+  - 修改 `thg/musetalk/utils/blending.py` 的 `get_image_prepare_material`，支持可配置的 `blur_ratio`/`upper_boundary_ratio`/`expand`，默认保持向后兼容。
+  - 修改 `src/thg_engine.py`：`prepare()` 使用新 mask 参数；`infer()` 渲染上采样改用 `INTER_LANCZOS4`；`render_to_video()` 支持可配置 `-crf` 与 `-preset`。
+  - 修改 `src/avatar_manager.py` 与 `src/pipeline.py`，将新参数传递给 `MuseTalkAvatar`。
+  - 更新 `config/.env.example`、`docs/deploy.md`、`docs/benchmark.md`、`README.md`。
+  - 更新 `loop/STATE.md` 与 `loop/checkpoints/phase_9.ok`。
+- 端到端验证：
+  - 清理缓存后使用默认 avatar + PaddleSpeech TTS 生成 MP4（job_id=46eb70e7ade74e05），136 帧，嘴部 ROI Laplacian 方差均值 **1065.55**。
+  - 旧配置基线（blur=0.1, linear）生成 MP4（job_id=485c94564a2a4be8），嘴部 ROI Laplacian 方差均值 **1063.68**。
+  - 默认配置 `/api/generate` 与实时对话路径均可正常工作。
+
+### 当前未完成任务
+- [ ] 由用户执行推送脚本，将 ascend-avatar 仓库推送到 GitHub（沿用之前的 SSH 方式）。
+
+### 已知坑（新增/确认）
+- 修改 `THG_BLUR_RATIO`、`THG_EXPAND`、`THG_UPPER_BOUNDARY_RATIO` 等 mask 参数后，必须删除 `output/v15/avatars/<upload_id>` 缓存或使用 `force=True` 重新 prepare，否则仍使用旧 mask。
+- 在容器外直接运行涉及 PaddleSpeech 的脚本时，需要设置 `LD_PRELOAD=/usr/local/python3.9.2/lib/python3.9/site-packages/sklearn/utils/../../scikit_learn.libs/libgomp-d22c30c5.so.1.0.0` 与 `LD_BIND_NOW=1`，否则 sklearn 静态 TLS 块分配失败。
+
+*更新时间：2026-06-23 19:50*
+
+---
+
 ## 2026-06-23 17:49 最新快照
 
 ### 刚完成

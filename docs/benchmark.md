@@ -52,3 +52,44 @@
 - MuseTalk torch.compile 首次预热需 7-8 分钟，之后推理稳定在 3.67s/3s 音频
 - MediaMTX v1.9.0 使用正则路径 `~^(.+)$` 允许动态 RTMP 推流路径
 - 所有测试在 NPU prewarm 完成后执行
+
+## Phase 9：视频生成嘴部清晰度优化
+
+### 优化项
+
+| 参数 | 旧值 | 新值 | 说明 |
+|------|------|------|------|
+| Mask 高斯模糊系数 | 0.1（硬编码） | 0.05（可配置） | 降低嘴部边缘羽化 |
+| 渲染上采样插值 | INTER_LINEAR（默认） | INTER_LANCZOS4 | 256×256 贴回原 bbox 时更清晰 |
+| FFmpeg preset | 无 | medium（可配置） | 编码速度/质量可控 |
+
+### 关键环境变量
+
+```bash
+THG_BLUR_RATIO=0.05
+THG_RENDER_INTERPOLATION=lanczos4
+FFMPEG_CRF=18
+FFMPEG_PRESET=medium
+```
+
+### 验证方法
+
+1. 清理旧缓存后重新上传/预处理 avatar：
+   ```bash
+   rm -rf /ascend-avatar/output/v15/avatars/<upload_id>
+   ```
+2. 调用 `/api/generate` 生成短视频，文本建议包含明显嘴型变化（如 "波坡摸佛"）。
+3. 抽取若干帧，计算嘴部 ROI 的 Laplacian 方差，或主观对比唇线清晰度。
+
+### 测试记录
+
+| # | 日期 | 配置 | 文本 | 输出 | 嘴部 Laplacian 方差均值 | 备注 |
+|---|------|------|------|------|------------------------|------|
+| 1 | 2026-06-23 | blur=0.05, lanczos4, preset=medium | 你好，欢迎使用数字人。今天天气真不错。 | 512×512@25fps, 136 帧 | **1065.55** | 新默认配置，PaddleSpeech TTS |
+| 2 | 2026-06-23 | blur=0.1, linear, preset=medium | 同上 | 512×512@25fps, 136 帧 | **1063.68** | 旧配置基线 |
+
+### 调参建议
+
+- 嘴部边缘仍偏软：适当降低 `THG_BLUR_RATIO`（0.03–0.05）。
+- 出现 mask 接缝/抖动：适当提高 `THG_BLUR_RATIO`（0.06–0.08）或增大 `THG_EXPAND`。
+- 需要更小文件/更快编码：将 `FFMPEG_PRESET` 改为 `fast` 或 `veryfast`，`FFMPEG_CRF` 改为 23。
