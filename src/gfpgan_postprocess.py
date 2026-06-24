@@ -151,9 +151,8 @@ class GFPGANPostProcessor:
 
         if restored is None:
             return frame_bgr
-        # GFPGAN returns RGB numpy array
-        if restored.shape[2] == 3:
-            restored = cv2.cvtColor(restored, cv2.COLOR_RGB2BGR)
+        # GFPGAN's `paste_back=True` returns a BGR numpy array (it converts
+        # internally with rgb2bgr=True). Keep it as BGR for OpenCV.
         return restored
 
     def enhance_video(

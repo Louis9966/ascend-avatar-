@@ -104,7 +104,7 @@ FFMPEG_PRESET=medium
 | 默认 `THG_BLUR_RATIO` | 0.05 | 0.03 | 更小的 mask 高斯核，嘴部边缘更锐 |
 | `MUSE_TALK_BBOX_SHIFT` | 0 | -7 | 嘴部 bbox 更紧凑（A/B 中表现最好） |
 | 输入预处理 | 原分辨率 | 512×512 | 上传/默认 avatar 先中心裁剪为正方形再缩放，降低 256→原图的上采样失真 |
-| 后处理 | 无 | GFPGAN v1.4 (CPU) | 视频生成模式下可选人脸增强 |
+| 后处理 | 无 | GFPGAN v1.4 (NPU) | 视频生成模式下可选人脸增强；已切至 NPU |
 
 ### 关键环境变量
 
@@ -114,16 +114,17 @@ MUSE_TALK_BBOX_SHIFT=-7
 THG_PREPARE_RESOLUTION=512x512
 VIDEO_GEN_POSTPROCESS_GFPGAN=true
 GFPGAN_MODEL_PATH=/ascend-avatar/thg/models/gfpgan/GFPGANv1.4.pth
-GFPGAN_DEVICE=cpu
+GFPGAN_DEVICE=npu
 ```
 
 ### 测试记录（MyVideo_1.mp4）
 
 | 配置 | 输出 | 嘴部 Laplacian 方差均值 | GFPGAN 耗时 | 备注 |
 |------|------|------------------------|------------|------|
-| blur=0.03, bbox=-7, 512×512 输入 | 512×512@25fps, 92 帧, RAW | **162.95** | - | 未做 GFPGAN |
-| 同上 + GFPGAN v1.4 CPU | 512×512@25fps, 92 帧 | **287.84** | ~90–110 s | 人脸整体更自然，Laplacian 提升约 76% |
-| 同上 + GFPGAN v1.4 NPU | 512×512@25fps, 92 帧 | **289.37** | **~42 s** | 质量与 CPU 相当，速度提升约 2× |
+| blur=0.03, bbox=-7, 512×512 输入 | 512×512@25fps, 86 帧, RAW | **166.23** | - | 未做 GFPGAN |
+| 同上 + GFPGAN v1.4 NPU | 512×512@25fps, 86 帧 | **298.32** | **~42 s** | 颜色正常，肤色/背景保持；Laplacian 提升约 79% |
+
+> 注：早期的 GFPGAN 后处理实现错误地做了 `COLOR_RGB2BGR`，导致红蓝通道互换（蓝色背景变红、皮肤红色变蓝）。已在 `src/gfpgan_postprocess.py` 中移除该转换，因为 GFPGAN 的 `paste_back=True` 实际返回的是 BGR 格式。
 
 ### 注意事项
 
