@@ -10,6 +10,7 @@ from typing import Any, Dict, Optional
 
 from src.avatar_manager import AvatarManager, AvatarNotReadyError
 from src.config import Config
+from src.gfpgan_postprocess import GFPGANPostProcessor
 from src.paddlespeech_tts_engine import PaddleSpeechTTSEngine, PaddleSpeechTTSError
 from src.tts_engine import EdgeTTSEngine, detect_language, pick_voice
 
@@ -35,6 +36,7 @@ class VideoGenPipeline:
         self._lock: Optional[asyncio.Lock] = None
         self._paddlespeech_engine: Optional[PaddleSpeechTTSEngine] = None
         self._edge_engine: Optional[EdgeTTSEngine] = None
+        self._gfpgan_processor: Optional[Any] = None
 
     def _ensure_lock(self) -> None:
         if self._lock is None:
@@ -55,6 +57,17 @@ class VideoGenPipeline:
         if self._edge_engine is None:
             self._edge_engine = EdgeTTSEngine()
         return self._edge_engine
+
+    def _get_gfpgan_processor(self) -> GFPGANPostProcessor:
+        if self._gfpgan_processor is None:
+            self._gfpgan_processor = GFPGANPostProcessor(
+                model_path=self.cfg.gfpgan_model_path,
+                upscale=self.cfg.gfpgan_upscale,
+                arch=self.cfg.gfpgan_arch,
+                channel_multiplier=self.cfg.gfpgan_channel_multiplier,
+                device=self.cfg.gfpgan_device,
+            )
+        return self._gfpgan_processor
 
     async def submit(
         self,
@@ -180,6 +193,29 @@ class VideoGenPipeline:
 
             if not output_path.exists():
                 raise RuntimeError("MP4 生成失败")
+
+            # --- Optional GFPGAN face enhancement --------------------------
+            if self.cfg.video_gen_postprocess_gfpgan:
+                device_label = "NPU" if "npu" in str(self.cfg.gfpgan_device).lower() else "CPU"
+                await self._update_job(
+                    job_id,
+                    status="postprocess",
+                    progress=0.85,
+                    message=f"GFPGAN 人脸增强中（{device_label}）...",
+                )
+                raw_path = job_dir / "output_raw.mp4"
+                output_path.rename(raw_path)
+                await asyncio.get_event_loop().run_in_executor(
+                    None,
+                    self._get_gfpgan_processor().enhance_video,
+                    raw_path,
+                    output_path,
+                    None,
+                    self.cfg.ffmpeg_crf,
+                    self.cfg.ffmpeg_preset,
+                )
+                if not output_path.exists():
+                    raise RuntimeError("GFPGAN 后处理失败")
 
             await self._update_job(
                 job_id,

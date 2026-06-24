@@ -58,6 +58,7 @@ class ConversationPipeline:
             render_interpolation=cfg.thg_render_interpolation,
             ffmpeg_crf=cfg.ffmpeg_crf,
             ffmpeg_preset=cfg.ffmpeg_preset,
+            prepare_resolution=cfg.thg_prepare_resolution,
         )
         self.avatar.prepare()
         self.history: List[Dict[str, str]] = []

@@ -5,6 +5,7 @@ import glob
 import os
 import pickle
 import shutil
+import subprocess
 import sys
 import time
 from pathlib import Path
@@ -55,10 +56,11 @@ class MuseTalkAvatar:
         vae_type: str = "sd-vae",
         upper_boundary_ratio: float = 0.5,
         expand: float = 1.5,
-        blur_ratio: float = 0.05,
+        blur_ratio: float = 0.03,
         render_interpolation: str = "lanczos4",
         ffmpeg_crf: int = 18,
         ffmpeg_preset: str = "medium",
+        prepare_resolution: str = "",
     ):
         self.avatar_id = avatar_id
         self.video_path = Path(video_path)
@@ -80,6 +82,7 @@ class MuseTalkAvatar:
         self.render_interpolation = render_interpolation
         self.ffmpeg_crf = ffmpeg_crf
         self.ffmpeg_preset = ffmpeg_preset
+        self.prepare_resolution = prepare_resolution.strip().lower()
 
         self.interpolation_map = {
             "lanczos4": cv2.INTER_LANCZOS4,
@@ -180,6 +183,41 @@ class MuseTalkAvatar:
             raise RuntimeError(f"No frames read from {src}")
         print(f"[THG] Extracted {count} frames from base video")
 
+    def _preprocess_input_video(self, src: Path) -> Path:
+        """Resize/crop the input video to a target square resolution before prepare.
+
+        This reduces the upsampling blur that occurs when MuseTalk's 256x256
+        generated mouth region is pasted back onto a much larger original frame.
+        The target format is 'WxH' (e.g. '512x512'); a center square crop is
+        applied first to preserve aspect ratio.
+        """
+        target = self.prepare_resolution
+        if "x" not in target:
+            print(f"[THG] prepare_resolution '{target}' is not in WxH format, skipping")
+            return src
+        width, height = target.split("x")
+        width, height = int(width), int(height)
+        dst = self.base_path / f"prepare_{target}.mp4"
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        print(f"[THG] Preprocessing input to {target} (center-crop square) -> {dst}")
+        cmd = [
+            "ffmpeg",
+            "-y",
+            "-loglevel", "warning",
+            "-i", str(src),
+            "-vf",
+            f"crop=min(iw\\,ih):min(iw\\,ih):(iw-min(iw\\,ih))/2:(ih-min(iw\\,ih))/2,scale={width}:{height}:flags=lanczos",
+            "-c:v", "libx264",
+            "-pix_fmt", "yuv420p",
+            "-r", str(self.fps),
+            "-an",
+            str(dst),
+        ]
+        ret = subprocess.run(cmd, capture_output=True, text=True).returncode
+        if ret != 0 or not dst.exists():
+            raise RuntimeError(f"Failed to preprocess input video to {target}")
+        return dst
+
     def _assets_ready(self) -> bool:
         return (
             self.latents_out_path.exists()
@@ -210,7 +248,12 @@ class MuseTalkAvatar:
             self.mask_out_path.mkdir(parents=True, exist_ok=True)
 
             print(f"[THG] Preparing avatar {self.avatar_id} from {self.video_path}")
-            self._video_to_imgs(self.video_path, self.full_imgs_path)
+
+            src_video = self.video_path
+            if self.prepare_resolution:
+                src_video = self._preprocess_input_video(self.video_path)
+
+            self._video_to_imgs(src_video, self.full_imgs_path)
             input_img_list = sorted(
                 glob.glob(str(self.full_imgs_path / "*.[jpJP][pnPN]*[gG]"))
             )

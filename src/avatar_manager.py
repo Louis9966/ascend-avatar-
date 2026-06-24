@@ -143,6 +143,7 @@ class AvatarManager:
                 render_interpolation=self.cfg.thg_render_interpolation,
                 ffmpeg_crf=self.cfg.ffmpeg_crf,
                 ffmpeg_preset=self.cfg.ffmpeg_preset,
+                prepare_resolution=self.cfg.thg_prepare_resolution,
             )
 
             async with self._lock:
@@ -252,6 +253,7 @@ class AvatarManager:
             render_interpolation=self.cfg.thg_render_interpolation,
             ffmpeg_crf=self.cfg.ffmpeg_crf,
             ffmpeg_preset=self.cfg.ffmpeg_preset,
+            prepare_resolution=self.cfg.thg_prepare_resolution,
         )
 
     async def _get_ready_avatar(self, upload_id: str) -> MuseTalkAvatar:
