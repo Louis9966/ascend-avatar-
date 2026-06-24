@@ -17,3 +17,19 @@ Phase 10 OK
   - 颜色检查：output.mp4 与 output_raw.mp4 的 B/G/R 通道均值一致，红蓝未互换。
   - 嘴部 bbox 平均面积约 3276 px²（Haar 旧方案约 9939 px²），更聚焦嘴唇。
 - 注意：实时对话路径 `/api/chat` 未启用 GFPGAN，仅视频生成 `/api/generate` 启用；默认 avatar 缓存如未删除仍使用 Haar 预处理。
+
+Phase 10 后续优化（2026-06-24）
+- 针对 MyVideo_1 重新 A/B 测试 `MUSE_TALK_BBOX_SHIFT`：
+  - shift=0 嘴部 Laplacian 方差均值 95.72（最高）
+  - shift=5 为 91.58
+  - shift=-7 为 88.41
+  因此将 `.env` 中 `MUSE_TALK_BBOX_SHIFT` 从 -7 调整为 0（该值对 MyVideo_1 最自然）。
+- `_preprocessing_patch.py` 新增 5 帧时序滑动平均，环境变量 `MEDIAPIPE_SMOOTHING_WINDOW=5`，减少嘴部 bbox 逐帧抖动。
+- 新增 `src/audio_utils.py:trim_silence()`，在 `src/thg_engine.py:render_to_video()` 和 `src/pipeline.py:_stream_sentence()` 中先去除 TTS 首尾静音，使首帧画面与首个音素对齐，修复音画不同步观感。
+- `scripts/start.sh` 增加 `LD_PRELOAD` 预加载 scikit-learn 的 libgomp，避免 PaddleSpeech 偶发的 static TLS block 导入失败。
+- 已验证：重新预处理 MyVideo_1 后生成视频（upload_id=49a6c93f7de1f8a0，job_id=68f78ee82b404ece）。
+  - 文本：「波坡摸佛吃葡萄不吐葡萄皮」
+  - 输出：`/ascend-avatar/output/generated/68f78ee82b404ece/output.mp4`
+  - 视频/音频 duration 差：**1 ms**（video 3.400s / audio 3.401s）
+  - 嘴部 ROI Laplacian 方差均值：**96.33**
+  - 5s 片段独立验证：sharpness=96.88，duration 差 1 ms

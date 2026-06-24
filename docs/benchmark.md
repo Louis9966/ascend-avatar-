@@ -136,3 +136,56 @@ GFPGAN_DEVICE=npu
 - 首次使用 GFPGAN 会自动下载 `detection_Resnet50_Final.pth` 和 `parsing_parsenet.pth` 到 `gfpgan/weights/`；离线环境请提前放置。
 - NPU 路径会自动初始化 `torch_npu.npu.set_device`，并在失败时回退到 CPU，避免任务失败。
 - 已存在的 avatar 缓存（如 `output/v15/avatars/default`）仍使用 Haar 预处理；如需对新 avatar 生效，删除缓存目录后重新上传/重启服务即可。
+
+## Phase 10 后续优化：嘴型自然度 + 音画同步
+
+### 问题
+
+用户反馈：
+1. MyVideo_1 生成的人物嘴型仍显不自然。
+2. 嘴部动作与语音存在明显不同步（ mouth starts late / misaligned phonemes）。
+
+### 修复项
+
+| 参数/代码 | 改动 | 说明 |
+|-----------|------|------|
+| `MUSE_TALK_BBOX_SHIFT` | `-7 → 0`（`.env`） | 针对 MyVideo_1 的 A/B 测试显示 `shift=0` 嘴部 ROI 锐度最高（95.72 vs -7 的 88.41），嘴位更居中自然。 |
+| 嘴部 bbox 时序平滑 | 新增 `MEDIAPIPE_SMOOTHING_WINDOW=5` | `_preprocessing_patch.py` 对 MediaPipe 检测出的嘴部 bbox 做 5 帧滑动平均，减少逐帧抖动。 |
+| 音频静音修剪 | 新增 `src/audio_utils.py` | `render_to_video` 与实时对话路径先调用 `trim_silence()` 去除首尾静音，使首帧画面与首个音素对齐。 |
+| PaddleSpeech 导入 | `scripts/start.sh` 增加 `LD_PRELOAD` | 预加载 `scikit_learn.libs/libgomp-d22c30c5.so.1.0.0`，避免偶发的 static TLS block 导入失败。 |
+
+### 关键环境变量
+
+```bash
+MUSE_TALK_BBOX_SHIFT=0
+MEDIAPIPE_MOUTH_MARGIN_X=0.6
+MEDIAPIPE_MOUTH_MARGIN_Y=0.6
+MEDIAPIPE_SMOOTHING_WINDOW=5
+THG_BLUR_RATIO=0.03
+THG_PREPARE_RESOLUTION=512x512
+VIDEO_GEN_POSTPROCESS_GFPGAN=true
+GFPGAN_DEVICE=npu
+```
+
+### 验证方法
+
+1. 删除旧缓存，使新参数生效：
+   ```bash
+   rm -rf /ascend-avatar/output/v15/avatars/<upload_id>
+   ```
+2. 调用 `/api/generate` 生成视频，文本建议包含爆破音/双唇音（如 "波坡摸佛吃葡萄不吐葡萄皮"）。
+3. 主观检查：嘴唇开合与语音节奏是否一致，嘴角/下巴是否稳定无抖动。
+4. 客观检查：用 `ffprobe` 对比视频流与音频流 duration 差是否 < 50 ms。
+5. 客观指标：用 `scripts/ab_mouth_sharpness.py` 计算嘴部 ROI Laplacian 方差。
+
+### 测试记录（MyVideo_1.mp4）
+
+| 配置 | 文本 | 输出 | 嘴部 Laplacian 方差均值 | 视频/音频时长差 | 备注 |
+|------|------|------|------------------------|----------------|------|
+| blur=0.03, bbox=-7, MediaPipe, 无平滑 | 波坡摸佛吃葡萄不吐葡萄皮 | 512×512@25fps, 86 帧 | **88.41**（5s 片段） | 约 13 ms | 优化前基线（shift=-7） |
+| blur=0.03, bbox=0, MediaPipe, 5帧平滑, 静音修剪 | 同上 | 512×512@25fps, 85 帧 | **96.33** | **1 ms** | 优化后：嘴型自然度提升，音画同步误差接近 0 |
+
+> 注：
+> - 5s 片段独立验证：sharpness=96.88，视频/音频 duration 差 1 ms。
+> - 时长差由 `ffprobe` 读取容器层 duration 得到；1 ms 差异在可感知范围之外。
+> - 默认 avatar `default_base.mp4` 在之前 A/B 中 `bbox_shift=-7` 表现更好；若主要使用默认 avatar，可保持 `-7`。

@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import asyncio
 import os
+import shutil
 import subprocess
 import time
 import uuid
@@ -15,6 +16,7 @@ import numpy as np
 import torch
 from pydub import AudioSegment
 
+from src import audio_utils
 from src.config import Config
 from src.llm_client import LLMClient
 from src.streaming import RTMPStreamer
@@ -214,15 +216,27 @@ class ConversationPipeline:
         await tts_engine.synthesize(sentence, wav_path)
         tts_latency_ms = round((time.perf_counter() - t0) * 1000, 1)
 
+        # Remove leading / trailing silence so the lip-sync starts with the first
+        # phoneme and the rendered frames match the audible audio duration.
+        trimmed_wav_path = wav_path.with_suffix(".trimmed.wav")
+        try:
+            audio_utils.trim_silence(wav_path, trimmed_wav_path, sample_rate=16000)
+        except Exception as e:
+            print(f"[PIPELINE] Failed to trim silence: {e}; using original audio")
+            trimmed_wav_path = wav_path
+
         # Pad very short audio with silence so the RTMP stream stays alive
         # long enough for MediaMTX to register the path and browsers to connect.
         try:
-            audio = AudioSegment.from_wav(str(wav_path))
+            audio = AudioSegment.from_wav(str(trimmed_wav_path))
             min_duration_ms = 5000
             if len(audio) < min_duration_ms:
                 padding = AudioSegment.silent(duration=min_duration_ms - len(audio))
                 audio = audio + padding
                 audio.export(str(wav_path), format="wav")
+            elif trimmed_wav_path != wav_path:
+                # Use the trimmed file directly; replace the original.
+                shutil.move(str(trimmed_wav_path), str(wav_path))
         except Exception as e:
             print(f"[PIPELINE] Failed to pad audio: {e}")
 

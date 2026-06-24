@@ -17,6 +17,8 @@ import numpy as np
 import torch
 from transformers import WhisperModel
 
+from src import audio_utils
+
 # Ensure the checked-out MuseTalk repo is importable
 THG_ROOT = Path(os.environ.get("THG_DIR", "/ascend-avatar/thg"))
 if str(THG_ROOT) not in sys.path:
@@ -401,13 +403,23 @@ class MuseTalkAvatar:
         """Render all frames and mux with audio to an MP4 file."""
         output_path = Path(output_path)
         output_path.parent.mkdir(parents=True, exist_ok=True)
+
+        # Trim leading / trailing silence so the first rendered frame lines up
+        # with the first audible phoneme.  MuseTalk expects 16 kHz audio.
+        trimmed_wav = output_path.parent / (output_path.stem + "_trimmed.wav")
+        audio_utils.trim_silence(audio_path, trimmed_wav, sample_rate=16000)
+
         tmp_dir = output_path.parent / "tmp_frames"
         tmp_dir.mkdir(parents=True, exist_ok=True)
         for f in tmp_dir.glob("*.png"):
             f.unlink()
 
-        for i, frame in enumerate(self.infer(audio_path)):
+        frame_count = 0
+        for i, frame in enumerate(self.infer(trimmed_wav)):
             cv2.imwrite(str(tmp_dir / f"{i:08d}.png"), frame)
+            frame_count = i + 1
+
+        print(f"[THG] Rendered {frame_count} frames for audio {trimmed_wav}")
 
         cmd = [
             "ffmpeg",
@@ -419,7 +431,7 @@ class MuseTalkAvatar:
             "-i",
             str(tmp_dir / "%08d.png"),
             "-i",
-            str(audio_path),
+            str(trimmed_wav),
             "-c:v",
             "libx264",
             "-pix_fmt",
@@ -438,6 +450,8 @@ class MuseTalkAvatar:
         ]
         os.system(" ".join(cmd))
         shutil.rmtree(tmp_dir)
+        if trimmed_wav.exists() and trimmed_wav != Path(audio_path):
+            trimmed_wav.unlink()
         return output_path
 
 

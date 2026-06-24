@@ -18,6 +18,13 @@ fi
 export ASCEND_VISIBLE_DEVICES=7
 export ASCEND_RT_VISIBLE_DEVICES=7
 
+# Preload scikit-learn's libgomp to avoid the static TLS block error that
+# sometimes breaks PaddleSpeech/paddlenlp imports in this container.
+SCIKIT_LIBGOMP=/usr/local/python3.9.2/lib/python3.9/site-packages/scikit_learn.libs/libgomp-d22c30c5.so.1.0.0
+if [ -f "$SCIKIT_LIBGOMP" ]; then
+    export LD_PRELOAD="${LD_PRELOAD:+$LD_PRELOAD:}$SCIKIT_LIBGOMP"
+fi
+
 # Default to the local MindIE endpoint if not configured.
 export LLM_BASE_URL="${LLM_BASE_URL:-http://192.168.1.117:1025/v1}"
 export LLM_MODEL="${LLM_MODEL:-qwen3_32b}"

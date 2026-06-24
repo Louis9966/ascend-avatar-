@@ -80,10 +80,21 @@ def _haar_to_mouth_bbox(
     return x1, my1, x2, my2
 
 
+# MediaPipe mouth bbox margins relative to the lip span.
+# Larger values include more cheek/chin context and usually look more natural;
+# smaller values are sharper but may lose jaw-line context.
+_MP_MARGIN_X = float(os.environ.get("MEDIAPIPE_MOUTH_MARGIN_X", "0.6"))
+_MP_MARGIN_Y = float(os.environ.get("MEDIAPIPE_MOUTH_MARGIN_Y", "0.6"))
+
+# Temporal smoothing window for mouth bboxes (frames).  A small moving average
+# removes per-frame jitter without adding visible lag.
+_MP_SMOOTH_WINDOW = max(1, int(os.environ.get("MEDIAPIPE_SMOOTHING_WINDOW", "5")))
+
+
 def _detect_mouth_bbox_mediapipe(
     frame: np.ndarray,
 ) -> Tuple[int, int, int, int] | None:
-    """Return a tight mouth bbox from MediaPipe Face Mesh lip landmarks."""
+    """Return a mouth bbox from MediaPipe Face Mesh lip landmarks."""
     if _MP_FACE_MESH is None:
         return None
 
@@ -97,8 +108,8 @@ def _detect_mouth_bbox_mediapipe(
     xs = [landmarks[i].x * w for i in _OUTER_LIP_INDICES]
     ys = [landmarks[i].y * h for i in _OUTER_LIP_INDICES]
 
-    margin_x = (max(xs) - min(xs)) * 0.25
-    margin_y = (max(ys) - min(ys)) * 0.35
+    margin_x = (max(xs) - min(xs)) * _MP_MARGIN_X
+    margin_y = (max(ys) - min(ys)) * _MP_MARGIN_Y
 
     x1 = int(max(0, min(xs) - margin_x))
     y1 = int(max(0, min(ys) - margin_y))
@@ -123,6 +134,50 @@ def _detect_mouth_bbox(
     return _haar_to_mouth_bbox(face)
 
 
+def _smooth_bboxes(
+    coords: List[Tuple[int, int, int, int]],
+    window: int = _MP_SMOOTH_WINDOW,
+) -> List[Tuple[int, int, int, int]]:
+    """Apply a temporal moving-average to mouth bboxes.
+
+    Invalid / placeholder bboxes (all zeros) are treated as NaN and filled by
+    nearest valid neighbour so the crop does not jump on occasional detection
+    failures.
+    """
+    if window <= 1 or len(coords) <= 1:
+        return coords
+
+    arr = np.array(coords, dtype=np.float32)
+    placeholder = np.array([0.0, 0.0, 0.0, 0.0])
+    valid = ~np.all(arr == placeholder, axis=1)
+    if not valid.any():
+        return coords
+
+    # Fill short invalid gaps with nearest valid value.
+    last_valid = np.argmax(valid)
+    for i in range(len(arr)):
+        if valid[i]:
+            last_valid = i
+        else:
+            arr[i] = arr[last_valid]
+    # Backfill leading invalid frames.
+    if not valid[0]:
+        first_valid = np.argmax(valid)
+        arr[:first_valid] = arr[first_valid]
+
+    # Causal + anti-causal smoothing with a small lag-free window.
+    # Use a triangular-ish kernel by averaging the current frame with the
+    # equally-weighted neighbours inside ``window``.
+    half = window // 2
+    kernel = np.ones(window, dtype=np.float32) / window
+    smoothed = np.zeros_like(arr)
+    for d in range(4):
+        # Pad by edge values to keep the same length.
+        padded = np.pad(arr[:, d], (half, half), mode="edge")
+        smoothed[:, d] = np.convolve(padded, kernel, mode="valid")[: len(arr)]
+    return [tuple(int(v) for v in row) for row in smoothed]
+
+
 def get_landmark_and_bbox(
     img_list: List[str], upperbondrange: int = 0
 ) -> Tuple[List, List[np.ndarray]]:
@@ -145,9 +200,24 @@ def get_landmark_and_bbox(
     for frame in tqdm(frames):
         det = _detect_mouth_bbox(frame)
         if det is None:
+            fallback_count += 1
             coords_list.append(coord_placeholder)
             continue
         x1, y1, x2, y2 = det
+        coords_list.append((x1, y1, x2, y2))
+
+    if fallback_count:
+        print(f"[preprocessing] MediaPipe failed on {fallback_count} frames; used Haar fallback")
+
+    # Temporal smoothing makes the mouth crop stable across frames.
+    coords_list = _smooth_bboxes(coords_list)
+
+    final_coords: List = []
+    for frame, bbox in zip(frames, coords_list):
+        if bbox == coord_placeholder:
+            final_coords.append(coord_placeholder)
+            continue
+        x1, y1, x2, y2 = bbox
 
         # Shift the mouth box up/down to fine-tune alignment.
         if upperbondrange != 0:
@@ -161,16 +231,15 @@ def get_landmark_and_bbox(
         y2 = min(frame.shape[0], y2)
 
         if y2 - y1 <= 0 or x2 - x1 <= 0:
-            coords_list.append(coord_placeholder)
+            final_coords.append(coord_placeholder)
             print("error bbox:", (x1, y1, x2, y2))
         else:
-            coords_list.append((x1, y1, x2, y2))
+            final_coords.append((x1, y1, x2, y2))
             h = y2 - y1
             average_range_minus.append(int(h * 0.25))
             average_range_plus.append(int(h * 0.25))
 
-    if fallback_count:
-        print(f"[preprocessing] MediaPipe failed on {fallback_count} frames; used Haar fallback")
+    coords_list = final_coords
 
     print(
         "********************************************bbox_shift parameter adjustment**********************************************************"

@@ -59,7 +59,7 @@ class Config:
     gfpgan_model_path: Path = field(
         default_factory=lambda: _project_root() / "thg/models/gfpgan/GFPGANv1.4.pth"
     )
-    gfpgan_upscale: int = 2
+    gfpgan_upscale: int = 1
     gfpgan_arch: str = "clean"
     gfpgan_channel_multiplier: int = 2
     gfpgan_device: str = "cpu"
