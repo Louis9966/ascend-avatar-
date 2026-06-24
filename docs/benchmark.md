@@ -94,3 +94,38 @@ FFMPEG_PRESET=medium
 - 嘴部边缘仍偏软：适当降低 `THG_BLUR_RATIO`（0.03–0.05）。
 - 出现 mask 接缝/抖动：适当提高 `THG_BLUR_RATIO`（0.06–0.08）或增大 `THG_EXPAND`。
 - 需要更小文件/更快编码：将 `FFMPEG_PRESET` 改为 `fast` 或 `veryfast`，`FFMPEG_CRF` 改为 23。
+
+## Phase 10：进一步降低模糊 + 输入缩放 + GFPGAN 后处理
+
+### 优化项
+
+| 参数 | 旧值 | 新值 | 说明 |
+|------|------|------|------|
+| 默认 `THG_BLUR_RATIO` | 0.05 | 0.03 | 更小的 mask 高斯核，嘴部边缘更锐 |
+| `MUSE_TALK_BBOX_SHIFT` | 0 | -7 | 嘴部 bbox 更紧凑（A/B 中表现最好） |
+| 输入预处理 | 原分辨率 | 512×512 | 上传/默认 avatar 先中心裁剪为正方形再缩放，降低 256→原图的上采样失真 |
+| 后处理 | 无 | GFPGAN v1.4 (CPU) | 视频生成模式下可选人脸增强 |
+
+### 关键环境变量
+
+```bash
+THG_BLUR_RATIO=0.03
+MUSE_TALK_BBOX_SHIFT=-7
+THG_PREPARE_RESOLUTION=512x512
+VIDEO_GEN_POSTPROCESS_GFPGAN=true
+GFPGAN_MODEL_PATH=/ascend-avatar/thg/models/gfpgan/GFPGANv1.4.pth
+GFPGAN_DEVICE=cpu
+```
+
+### 测试记录（MyVideo_1.mp4）
+
+| 配置 | 输出 | 嘴部 Laplacian 方差均值 | 备注 |
+|------|------|------------------------|------|
+| blur=0.03, bbox=-7, 512×512 输入 | 512×512@25fps, 92 帧, RAW | **383.05** | 未做 GFPGAN |
+| 同上 + GFPGAN v1.4 CPU | 512×512@25fps, 92 帧 | **370.43** | GFPGAN 增强后人脸整体更自然，但 Laplacian 数值略低 |
+
+### 注意事项
+
+- `THG_PREPARE_RESOLUTION=512x512` 会对输入做中心裁剪，人物必须在画面中心。
+- GFPGAN 在 CPU 上处理约 92 帧需要 1–2 分钟；实时对话路径未启用。
+- 首次使用 GFPGAN 会自动下载 `detection_Resnet50_Final.pth` 和 `parsing_parsenet.pth` 到 `gfpgan/weights/`；离线环境请提前放置。

@@ -64,3 +64,6 @@ sample/
 weight.json
 fusion_result.json
 =4.35.0
+
+# GFPGAN runtime weights downloaded on first use
+gfpgan/weights/

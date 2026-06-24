@@ -47,10 +47,22 @@ class Config:
     thg_right_cheek_width: int = 90
     thg_upper_boundary_ratio: float = 0.5
     thg_expand: float = 1.5
-    thg_blur_ratio: float = 0.05
+    thg_blur_ratio: float = 0.03
     thg_render_interpolation: str = "lanczos4"
+    # e.g. "512x512" to center-crop and scale the input avatar before MuseTalk prepare
+    thg_prepare_resolution: str = ""
     ffmpeg_crf: int = 18
     ffmpeg_preset: str = "medium"
+
+    # Optional GFPGAN post-processing for video generation
+    video_gen_postprocess_gfpgan: bool = False
+    gfpgan_model_path: Path = field(
+        default_factory=lambda: _project_root() / "thg/models/gfpgan/GFPGANv1.4.pth"
+    )
+    gfpgan_upscale: int = 2
+    gfpgan_arch: str = "clean"
+    gfpgan_channel_multiplier: int = 2
+    gfpgan_device: str = "cpu"
 
     avatar_id: str = "default"
     avatar_video: Path = Path("/ascend-avatar/avatars/default_base.mp4")
@@ -177,10 +189,19 @@ def load_config(env_path: str | None = None) -> Config:
         thg_right_cheek_width=_int("THG_RIGHT_CHEEK_WIDTH", 90),
         thg_upper_boundary_ratio=float(os.environ.get("THG_UPPER_BOUNDARY_RATIO", "0.5")),
         thg_expand=float(os.environ.get("THG_EXPAND", "1.5")),
-        thg_blur_ratio=float(os.environ.get("THG_BLUR_RATIO", "0.05")),
+        thg_blur_ratio=float(os.environ.get("THG_BLUR_RATIO", "0.03")),
         thg_render_interpolation=os.environ.get("THG_RENDER_INTERPOLATION", "lanczos4"),
+        thg_prepare_resolution=os.environ.get("THG_PREPARE_RESOLUTION", ""),
         ffmpeg_crf=_int("FFMPEG_CRF", 18),
         ffmpeg_preset=os.environ.get("FFMPEG_PRESET", "medium"),
+        video_gen_postprocess_gfpgan=_bool("VIDEO_GEN_POSTPROCESS_GFPGAN", False),
+        gfpgan_model_path=_path(
+            "GFPGAN_MODEL_PATH", _project_root() / "thg/models/gfpgan/GFPGANv1.4.pth"
+        ),
+        gfpgan_upscale=_int("GFPGAN_UPSCALE", 2),
+        gfpgan_arch=os.environ.get("GFPGAN_ARCH", "clean"),
+        gfpgan_channel_multiplier=_int("GFPGAN_CHANNEL_MULTIPLIER", 2),
+        gfpgan_device=os.environ.get("GFPGAN_DEVICE", "cpu"),
         avatar_id=os.environ.get("AVATAR_ID", "default"),
         avatar_video=_path("AVATAR_VIDEO", _project_root() / "avatars/default_base.mp4"),
         tts_voice_zh_female=os.environ.get("TTS_VOICE_ZH_FEMALE", "zh-CN-XiaoxiaoNeural"),
