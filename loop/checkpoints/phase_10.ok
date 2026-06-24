@@ -3,15 +3,17 @@ Phase 10 OK
 - 默认 `THG_BLUR_RATIO` 从 0.05 降至 0.03，嘴部 mask 羽化进一步降低。
 - 默认 `MUSE_TALK_BBOX_SHIFT` 设为 -7（A/B 测试中锐度最佳）。
 - 新增 `THG_PREPARE_RESOLUTION` 配置，支持对 avatar 输入视频做中心裁剪并缩放到目标分辨率（如 512x512），降低 MuseTalk 256x256 生成区域贴回原图时的上采样失真。
+- 嘴部 bbox 检测从 OpenCV Haar + 经验 heuristic 改为 MediaPipe Face Mesh 嘴唇关键点（Haar 兜底），嘴部区域更聚焦、唇线对齐更好。
 - 新增 GFPGAN 后处理模块 `src/gfpgan_postprocess.py`，在视频生成模式下可选对输出视频做人脸增强。
 - GFPGAN 支持 `GFPGAN_DEVICE=npu` 在昇腾 910B 上推理；`src/gfpgan_postprocess.py` 会在工作线程中调用 `torch_npu.npu.set_device`，NPU 失败时自动回退 CPU。
 - 修复 GFPGAN 后处理红蓝通道互换问题：`src/gfpgan_postprocess.py` 原实现错误地对返回图像做了 `COLOR_RGB2BGR`，实际 GFPGAN `paste_back=True` 已返回 BGR，现直接保留 BGR，肤色与背景颜色正常。
 - 下载并预置 GFPGAN 权重 `/ascend-avatar/thg/models/gfpgan/GFPGANv1.4.pth` 及 facexlib 检测/解析权重到 `gfpgan/weights/`。
 - 更新 `config/.env.example`、`config/.env`、`config/requirements.txt`、`docs/benchmark.md`。
 - 全流程验证（`/data/ascend-avatar/sample/MyVideo_1.mp4`）：
-  - 上传：upload_id=49a6c93f7de1f8a0，预处理至 512x512 后准备完成。
-  - 生成：job_id=cc3956bd75fe4cac，PaddleSpeech TTS + MuseTalk THG + GFPGAN NPU 后处理完成。
+  - 上传：upload_id=49a6c93f7de1f8a0，使用 MediaPipe Face Mesh 预处理至 512x512 后准备完成。
+  - 生成：job_id=2ef233e8ede444b0，PaddleSpeech TTS + MuseTalk THG + GFPGAN NPU 后处理完成。
   - 输出：512×512@25fps，86 帧（3.44s）。
-  - RAW 嘴部 Laplacian 方差均值：166.23；GFPGAN NPU 增强后：298.32；GFPGAN 后处理耗时约 42 秒。
+  - RAW 嘴部 Laplacian 方差均值：210.27；GFPGAN NPU 增强后：331.68；GFPGAN 后处理耗时约 42 秒。
   - 颜色检查：output.mp4 与 output_raw.mp4 的 B/G/R 通道均值一致，红蓝未互换。
-- 注意：实时对话路径 `/api/chat` 未启用 GFPGAN，仅视频生成 `/api/generate` 启用。
+  - 嘴部 bbox 平均面积约 3276 px²（Haar 旧方案约 9939 px²），更聚焦嘴唇。
+- 注意：实时对话路径 `/api/chat` 未启用 GFPGAN，仅视频生成 `/api/generate` 启用；默认 avatar 缓存如未删除仍使用 Haar 预处理。

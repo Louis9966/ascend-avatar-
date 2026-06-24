@@ -2,7 +2,7 @@
 
 项目: ascend-avatar
 当前 Phase: 10
-上次心跳: 2026-06-24 18:20:00
+上次心跳: 2026-06-24 19:10:00
 上次更新者: claude
 状态: COMPLETED
 
@@ -20,7 +20,7 @@
 - [x] Phase 10: 进一步降低模糊 + 输入缩放 + GFPGAN 后处理（已切至 NPU）
 
 ## 当前状态
-Phase 10 已完成：默认 `THG_BLUR_RATIO` 降至 0.03，`MUSE_TALK_BBOX_SHIFT` 设为 -7，新增 `THG_PREPARE_RESOLUTION=512x512` 对 avatar 输入做中心裁剪缩放，视频生成路径可选 GFPGAN v1.4 后处理，默认已切至 `GFPGAN_DEVICE=npu`。已修复 GFPGAN 后处理红蓝通道互换问题，使用 MyVideo_1.mp4 全流程验证成功，颜色正常，输出 512×512@25fps。
+Phase 10 已完成：默认 `THG_BLUR_RATIO` 降至 0.03，`MUSE_TALK_BBOX_SHIFT` 设为 -7，新增 `THG_PREPARE_RESOLUTION=512x512` 对 avatar 输入做中心裁剪缩放，视频生成路径可选 GFPGAN v1.4 后处理（NPU，颜色通道已修复）。嘴部 bbox 检测已改用 MediaPipe Face Mesh 嘴唇关键点（Haar 兜底），嘴部区域更聚焦、唇线对齐更好。使用 MyVideo_1.mp4 全流程验证成功，颜色正常，输出 512×512@25fps，RAW 嘴部 Laplacian 210.27，GFPGAN NPU 后 331.68。
 
 ## Phase 9 目标
 1. 降低嘴部 mask 羽化，提升唇线锐度。

@@ -104,6 +104,7 @@ FFMPEG_PRESET=medium
 | 默认 `THG_BLUR_RATIO` | 0.05 | 0.03 | 更小的 mask 高斯核，嘴部边缘更锐 |
 | `MUSE_TALK_BBOX_SHIFT` | 0 | -7 | 嘴部 bbox 更紧凑（A/B 中表现最好） |
 | 输入预处理 | 原分辨率 | 512×512 | 上传/默认 avatar 先中心裁剪为正方形再缩放，降低 256→原图的上采样失真 |
+| 嘴部 bbox 检测 | OpenCV Haar + 经验 heuristic | MediaPipe Face Mesh 嘴唇关键点 | 嘴部区域更准，唇线对齐更好；Haar 作为兜底 |
 | 后处理 | 无 | GFPGAN v1.4 (NPU) | 视频生成模式下可选人脸增强；已切至 NPU |
 
 ### 关键环境变量
@@ -121,10 +122,12 @@ GFPGAN_DEVICE=npu
 
 | 配置 | 输出 | 嘴部 Laplacian 方差均值 | GFPGAN 耗时 | 备注 |
 |------|------|------------------------|------------|------|
-| blur=0.03, bbox=-7, 512×512 输入 | 512×512@25fps, 86 帧, RAW | **166.23** | - | 未做 GFPGAN |
-| 同上 + GFPGAN v1.4 NPU | 512×512@25fps, 86 帧 | **298.32** | **~42 s** | 颜色正常，肤色/背景保持；Laplacian 提升约 79% |
+| blur=0.03, bbox=-7, 512×512 输入，Haar 检测 | 512×512@25fps, 86 帧, RAW | **166.23** | - | 未做 GFPGAN |
+| 同上 + MediaPipe Face Mesh 嘴部 bbox + GFPGAN NPU | 512×512@25fps, 86 帧 | **331.68** | **~42 s** | 颜色正常，唇线对齐更准；Laplacian 提升约 58% |
 
-> 注：早期的 GFPGAN 后处理实现错误地做了 `COLOR_RGB2BGR`，导致红蓝通道互换（蓝色背景变红、皮肤红色变蓝）。已在 `src/gfpgan_postprocess.py` 中移除该转换，因为 GFPGAN 的 `paste_back=True` 实际返回的是 BGR 格式。
+> 注：
+> 1. 早期的 GFPGAN 后处理实现错误地做了 `COLOR_RGB2BGR`，导致红蓝通道互换（蓝色背景变红、皮肤红色变蓝）。已在 `src/gfpgan_postprocess.py` 中移除该转换，因为 GFPGAN 的 `paste_back=True` 实际返回的是 BGR 格式。
+> 2. 参考 CSDN 部署笔记，准确的人脸/嘴部关键点预处理是嘴型效果的关键；由于 Ascend 容器不便编译 mmpose/mmcv，改用 MediaPipe Face Mesh 作为替代方案，嘴部 bbox 面积从 Haar 的约 9939 px² 降至约 3276 px²，更聚焦嘴唇。
 
 ### 注意事项
 
@@ -132,3 +135,4 @@ GFPGAN_DEVICE=npu
 - GFPGAN 在 CPU 上处理约 92 帧需要 1–2 分钟；切换到 `GFPGAN_DEVICE=npu` 后降至约 40–45 秒。
 - 首次使用 GFPGAN 会自动下载 `detection_Resnet50_Final.pth` 和 `parsing_parsenet.pth` 到 `gfpgan/weights/`；离线环境请提前放置。
 - NPU 路径会自动初始化 `torch_npu.npu.set_device`，并在失败时回退到 CPU，避免任务失败。
+- 已存在的 avatar 缓存（如 `output/v15/avatars/default`）仍使用 Haar 预处理；如需对新 avatar 生效，删除缓存目录后重新上传/重启服务即可。
