@@ -119,13 +119,15 @@ GFPGAN_DEVICE=cpu
 
 ### 测试记录（MyVideo_1.mp4）
 
-| 配置 | 输出 | 嘴部 Laplacian 方差均值 | 备注 |
-|------|------|------------------------|------|
-| blur=0.03, bbox=-7, 512×512 输入 | 512×512@25fps, 92 帧, RAW | **383.05** | 未做 GFPGAN |
-| 同上 + GFPGAN v1.4 CPU | 512×512@25fps, 92 帧 | **370.43** | GFPGAN 增强后人脸整体更自然，但 Laplacian 数值略低 |
+| 配置 | 输出 | 嘴部 Laplacian 方差均值 | GFPGAN 耗时 | 备注 |
+|------|------|------------------------|------------|------|
+| blur=0.03, bbox=-7, 512×512 输入 | 512×512@25fps, 92 帧, RAW | **162.95** | - | 未做 GFPGAN |
+| 同上 + GFPGAN v1.4 CPU | 512×512@25fps, 92 帧 | **287.84** | ~90–110 s | 人脸整体更自然，Laplacian 提升约 76% |
+| 同上 + GFPGAN v1.4 NPU | 512×512@25fps, 92 帧 | **289.37** | **~42 s** | 质量与 CPU 相当，速度提升约 2× |
 
 ### 注意事项
 
 - `THG_PREPARE_RESOLUTION=512x512` 会对输入做中心裁剪，人物必须在画面中心。
-- GFPGAN 在 CPU 上处理约 92 帧需要 1–2 分钟；实时对话路径未启用。
+- GFPGAN 在 CPU 上处理约 92 帧需要 1–2 分钟；切换到 `GFPGAN_DEVICE=npu` 后降至约 40–45 秒。
 - 首次使用 GFPGAN 会自动下载 `detection_Resnet50_Final.pth` 和 `parsing_parsenet.pth` 到 `gfpgan/weights/`；离线环境请提前放置。
+- NPU 路径会自动初始化 `torch_npu.npu.set_device`，并在失败时回退到 CPU，避免任务失败。

@@ -196,11 +196,12 @@ class VideoGenPipeline:
 
             # --- Optional GFPGAN face enhancement --------------------------
             if self.cfg.video_gen_postprocess_gfpgan:
+                device_label = "NPU" if "npu" in str(self.cfg.gfpgan_device).lower() else "CPU"
                 await self._update_job(
                     job_id,
                     status="postprocess",
                     progress=0.85,
-                    message="GFPGAN 人脸增强中（CPU 较慢）...",
+                    message=f"GFPGAN 人脸增强中（{device_label}）...",
                 )
                 raw_path = job_dir / "output_raw.mp4"
                 output_path.rename(raw_path)

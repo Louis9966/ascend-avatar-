@@ -4,11 +4,12 @@ Phase 10 OK
 - 默认 `MUSE_TALK_BBOX_SHIFT` 设为 -7（A/B 测试中锐度最佳）。
 - 新增 `THG_PREPARE_RESOLUTION` 配置，支持对 avatar 输入视频做中心裁剪并缩放到目标分辨率（如 512x512），降低 MuseTalk 256x256 生成区域贴回原图时的上采样失真。
 - 新增 GFPGAN 后处理模块 `src/gfpgan_postprocess.py`，在视频生成模式下可选对输出视频做人脸增强。
+- GFPGAN 支持 `GFPGAN_DEVICE=npu` 在昇腾 910B 上推理；`src/gfpgan_postprocess.py` 会在工作线程中调用 `torch_npu.npu.set_device`，NPU 失败时自动回退 CPU。
 - 下载并预置 GFPGAN 权重 `/ascend-avatar/thg/models/gfpgan/GFPGANv1.4.pth` 及 facexlib 检测/解析权重到 `gfpgan/weights/`。
-- 更新 `config/.env.example`、`config/requirements.txt`、`docs/benchmark.md`。
+- 更新 `config/.env.example`、`config/.env`、`config/requirements.txt`、`docs/benchmark.md`。
 - 全流程验证（`/data/ascend-avatar/sample/MyVideo_1.mp4`）：
   - 上传：upload_id=49a6c93f7de1f8a0，预处理至 512x512 后准备完成。
-  - 生成：job_id=52ed1e53fcc143c2，PaddleSpeech TTS + MuseTalk THG + GFPGAN 后处理完成。
+  - 生成：job_id=cb093e47c835466b，PaddleSpeech TTS + MuseTalk THG + GFPGAN NPU 后处理完成。
   - 输出：512×512@25fps，92 帧（3.68s）。
-  - RAW 嘴部 Laplacian 方差均值：383.05；GFPGAN 增强后：370.43。
+  - RAW 嘴部 Laplacian 方差均值：162.95；GFPGAN NPU 增强后：289.37；GFPGAN 后处理耗时约 42 秒。
 - 注意：实时对话路径 `/api/chat` 未启用 GFPGAN，仅视频生成 `/api/generate` 启用。
