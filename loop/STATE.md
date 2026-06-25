@@ -35,6 +35,14 @@ Phase 10 已完成：默认 `THG_BLUR_RATIO` 降至 0.03，`MUSE_TALK_BBOX_SHIFT
    - 嘴部 ROI Laplacian 方差均值：**96.33**
    - 5s 片段独立验证：sharpness=96.88，duration 差 1 ms
 
+**服务重启后验证（2026-06-25）：**
+- 重启 `ascend-avatar-backend` 容器，WebUI 重新预热完成。
+- 通过线上 `/api/upload` + `/api/generate` 用 5s MyVideo_1 片段测试：
+  - 文本：「波坡摸佛吃葡萄不吐葡萄皮」
+  - 视频/音频 duration 差：**1 ms**（video 3.400s / audio 3.401s）
+  - 嘴部 ROI Laplacian 方差均值：**155.57**
+  - 服务恢复正常，音画同步误差接近 0。
+
 ## Phase 9 目标
 1. 降低嘴部 mask 羽化，提升唇线锐度。
 2. 渲染 256×256 → 原 bbox 时使用更锐利插值。

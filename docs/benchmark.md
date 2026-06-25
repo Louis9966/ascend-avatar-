@@ -184,8 +184,10 @@ GFPGAN_DEVICE=npu
 |------|------|------|------------------------|----------------|------|
 | blur=0.03, bbox=-7, MediaPipe, 无平滑 | 波坡摸佛吃葡萄不吐葡萄皮 | 512×512@25fps, 86 帧 | **88.41**（5s 片段） | 约 13 ms | 优化前基线（shift=-7） |
 | blur=0.03, bbox=0, MediaPipe, 5帧平滑, 静音修剪 | 同上 | 512×512@25fps, 85 帧 | **96.33** | **1 ms** | 优化后：嘴型自然度提升，音画同步误差接近 0 |
+| blur=0.03, bbox=0, MediaPipe, 5帧平滑, 静音修剪（服务重启后 API 复测） | 同上 | 512×512@25fps, 85 帧 | **155.57** | **1 ms** | 通过 `/api/upload` + `/api/generate` 线上调用验证 |
 
 > 注：
 > - 5s 片段独立验证：sharpness=96.88，视频/音频 duration 差 1 ms。
+> - 重启后线上 API 复测 sharpness 为 155.57，差异主要受 TTS 音频（PaddleSpeech / edge-tts）嘴型幅度影响；核心指标 **duration 差仍为 1 ms**，音画同步正常。
 > - 时长差由 `ffprobe` 读取容器层 duration 得到；1 ms 差异在可感知范围之外。
-> - 默认 avatar `default_base.mp4` 在之前 A/B 中 `bbox_shift=-7` 表现更好；若主要使用默认 avatar，可保持 `-7`。
+> - 默认 avatar `default_base.mp4` 在之前 A/B 中 `bbox_shift=-7` 表现更好；若主要使用默认 avatar，可保持 `-7`。当前默认 avatar 缓存仍是重启前旧参数生成；如需生效，删除 `output/v15/avatars/default` 后重启。

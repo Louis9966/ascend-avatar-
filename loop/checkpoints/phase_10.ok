@@ -33,3 +33,12 @@ Phase 10 后续优化（2026-06-24）
   - 视频/音频 duration 差：**1 ms**（video 3.400s / audio 3.401s）
   - 嘴部 ROI Laplacian 方差均值：**96.33**
   - 5s 片段独立验证：sharpness=96.88，duration 差 1 ms
+
+- 服务重启后验证（2026-06-25）：
+  - 重启 `ascend-avatar-backend` 容器，WebUI 重新预热完成。
+  - 通过线上 `/api/upload` + `/api/generate` 用 5s MyVideo_1 片段测试：
+    - 文本：「波坡摸佛吃葡萄不吐葡萄皮」
+    - 视频/音频 duration 差：**1 ms**（video 3.400s / audio 3.401s）
+    - 嘴部 ROI Laplacian 方差均值：**155.57**
+    - 服务恢复正常，音画同步误差接近 0。
+  - 注意：默认 avatar `output/v15/avatars/default` 仍是重启前用旧参数准备的缓存；如需要对新默认 avatar 生效，需删除该目录并再次重启。
